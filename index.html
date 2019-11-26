@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-sweetalert/1.0.1/sweetalert.min.css"/>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-sweetalert/1.0.1/sweetalert.min.js"></script>
+
+<style>
+.col-centered{
+    float: none;
+    margin: 0 auto;
+}
+</style>
+</head>
+<body><div class="container text-right header">
+</div>
+    <div class="jumbotron text-center">
+      <h2>Administrative Portal</h2>
+    </div>
+
+  <div class="container">
+    <div class="row">
+
+
+
+    </div>
+  </div>
+
+</body>
+
+<script>
+
+    var endpoint =""
+    var redirect_uri = ""
+
+    if (window.location.href.includes("localhost")){
+        endpoint = "http://localhost:83/"
+        redirect_uri = "http://localhost:30093"
+
+    }else{
+        endpoint = "http://adminapi.systeambiz.com/"
+        redirect_uri = "http://admin.systeambiz.com"
+
+    }
+
+    if(window.location.href.includes('id_token')){
+
+        token = window.location.hash.replace("#id_token=","");
+
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+
+
+        setCookie("email",JSON.parse(jsonPayload).email,1);
+        setCookie("first_name",JSON.parse(jsonPayload).given_name,1);
+        setCookie("last_name",JSON.parse(jsonPayload).family_name,1);
+
+        get_user(JSON.parse(jsonPayload).email)
+        $(".header").append(`
+            <button type="button" onclick="deleteAllCookies();window.open('`+redirect_uri+`','_self');" class="btn btn-danger" >Logout</button>
+        `)
+    }else if(getCookie("email") && getCookie("role")){
+        get_next_order();
+        $(".header").append(`
+            <button type="button" onclick="deleteAllCookies();window.open('`+redirect_uri+`','_self');" class="btn btn-danger" >Logout</button>
+        `)
+    }else{
+
+        $(".header").append(`
+            <button type="button" onclick="window.open('https://admin-systeambiz.auth.us-east-1.amazoncognito.com/login?client_id=3msd7j8jmtq227kafdiovheh05&response_type=token&scope=aws.cognito.signin.user.admin+email+openid+phone+profile&redirect_uri=`+redirect_uri+`/index.html','_self')" class="btn btn-success" >Login</button>
+        `)
+    }
+
+    function deleteAllCookies() {
+        var cookies = document.cookie.split(";");
+
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i];
+            var eqPos = cookie.indexOf("=");
+            var name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        }
+    }
+
+    function get_user(email){
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var result = JSON.parse(this.responseText);
+                console.log(result);
+                setCookie("role",result['role'],1);
+                get_next_order()
+            }
+        };
+        xhttp.open("GET",endpoint+'user?email='+getCookie("email") , true);
+        xhttp.send(null);
+    }
+    function show_user_info(){
+        $(".jumbotron").append("<p><b>Employee Name:</b> "+ getCookie("first_name")+"</p>")
+        $(".jumbotron").append("<p><b>Employee Role:</b> "+ getCookie("role")+"</p>")
+
+    }
+    function get_next_order(){
+        show_user_info()
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var result = JSON.parse(this.responseText);
+                console.log(result);
+                if(result.length>0){
+                    $(".row").append(`      <div class="col-lg-6 col-centered " align="center">
+                            <h3><u>Next Order to Process</u></h3>
+                            <br>
+                            <h4><b>Order ID:</b> `+result[0].order_id+` </h4>
+                            <h4><b>Created On: </b>`+result[0].created_on+` </h4>
+                            <h4><b>Status:</b> `+result[0].status+` </h4>
+                            <p><b>Product Name: </b> `+result[0].products[0].product_name+`</p>
+                            <p><b>Product Id:</b>`+result[0].products[0].product_id+`</p>
+                            <p><b>Product Quantity:</b>`+result[0].products[0].quantity+` </p>
+                            <br>
+                            <button type="button" onclick="changestatus()" id="next_order"  class="btn btn-success" val="`+result[0].order_id+`">Push order to next state</button>
+
+                          </div>
+                    `);
+                }
+                else{
+                    $(".row").append(`      <div class="col-lg-6 col-centered " align="center">
+                            <h3><u>No pending orders</u></h3>
+                            <br>
+                            <button type="button" onclick="window.location.reload();"  class="btn btn-primary" >Get next order to process</button>
+                          </div>
+                    `);
+                }
+            }
+        };
+        xhttp.open("GET",endpoint+'getnextorder?email='+getCookie('email') , true);
+        xhttp.send(null);
+    }
+    function changestatus(){
+        var id= $('#next_order').attr("val");
+        var payload= {
+            "id":Number(id)
+        }
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                var result = JSON.parse(this.responseText);
+                console.log(result);
+                swal({
+                  title: "Success",
+                  text: "Order successfully processed",
+                  type: "success",
+                  confirmButtonText: "OK",
+                  closeOnConfirm: false,
+                },
+                function(isConfirm) {
+                    window.location.reload();
+                });
+            }
+        };
+        xhttp.open("POST",endpoint+'changestatus' , true);
+        xhttp.send(JSON.stringify(payload));
+    }
+
+
+
+    function setCookie(cname, cvalue, exdays,path) {
+    	if(cvalue == undefined)
+    		cvalue = '';
+    	if(path == undefined)
+    		path = '/';
+        var d = new Date();
+        d.setTime(d.getTime() + (exdays*24*60*60*1000));
+        var expires = "expires="+ d.toUTCString();
+        document.cookie = cname + "=" + cvalue + ";" + expires + "; path="+ path +";";
+    }
+
+    function getCookie(cname) {
+        var name = cname + "=";
+        var decodedCookie = decodeURIComponent(document.cookie);
+        var ca = decodedCookie.split(';');
+        for(var i = 0; i <ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+                return c.substring(name.length, c.length);
+            }
+        }
+        return "";
+    }
+</script>
+</html>
