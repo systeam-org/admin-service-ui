@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-service-ui-deployment
+  labels:
+    app: admin-service-ui
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: admin-service-ui
+  template:
+    metadata:
+      labels:
+        app: admin-service-ui
+    spec:
+      containers:
+        - name: admin-service-ui
+          image: systeamorg/admin-service-ui
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 93
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-service-ui
+  labels:
+    app: admin-service-ui
+spec:
+  ports:
+    - port: 93
+      targetPort: 93
+      protocol: TCP
+      name: tcp
+      nodePort: 30093
+  type: NodePort
+  selector:
+    app: admin-service-ui
