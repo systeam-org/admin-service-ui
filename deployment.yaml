@@ -17,7 +17,6 @@ spec:
       containers:
         - name: admin-service-ui
           image: systeamorg/admin-service-ui
-          imagePullPolicy: Never
           ports:
             - containerPort: 93
 
