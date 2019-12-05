@@ -60,7 +60,7 @@
 
 
         setCookie("email",JSON.parse(jsonPayload).email,1);
-        setCookie("first_name",JSON.parse(jsonPayload).given_name,1);
+        setCookie("first_name",JSON.parse(jsonPayload).name,1);
         setCookie("last_name",JSON.parse(jsonPayload).family_name,1);
 
         get_user(JSON.parse(jsonPayload).email)
@@ -75,7 +75,7 @@
     }else{
 
         $(".header").append(`
-            <button type="button" onclick="window.open('https://admin-systeambiz.auth.us-east-1.amazoncognito.com/login?client_id=3msd7j8jmtq227kafdiovheh05&response_type=token&scope=aws.cognito.signin.user.admin+email+openid+phone+profile&redirect_uri=`+redirect_uri+`/index.html','_self')" class="btn btn-success" >Login</button>
+            <button type="button" onclick="window.open('https://dev-kdfnbpck.auth0.com/authorize?response_type=id_token token&client_id=jV26MVWkQVqweMHL8n166uOykU7TS6m0&scope=openid profile email picture&state=STATE&nonce=NONCE&redirect_uri=`+redirect_uri+`/index.html','_self')" class="btn btn-success" >Login</button>
         `)
     }
 
@@ -104,7 +104,7 @@
         xhttp.send(null);
     }
     function show_user_info(){
-        $(".jumbotron").append("<p><b>Employee Name:</b> "+ getCookie("first_name")+"</p>")
+        $(".jumbotron").append("<p><b>Employee Email:</b> "+ getCookie("first_name")+"</p>")
         $(".jumbotron").append("<p><b>Employee Role:</b> "+ getCookie("role")+"</p>")
 
     }
